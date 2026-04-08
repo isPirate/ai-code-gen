@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Build artifacts ###
+META-INF/
+
+### Local profile ###
+application-local.yml
