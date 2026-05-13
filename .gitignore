@@ -37,3 +37,6 @@ META-INF/
 
 ### Local profile ###
 application-local.yml
+
+### CUSTOM ###
+tmp/

@@ -6,6 +6,8 @@ server:
 spring:
   application:
     name: ai-code-gen
+  profiles:
+    active: local
   # mysql
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -13,8 +15,25 @@ spring:
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:}
 
-  profiles:
-    active: local
+# AI
+langchain4j:
+  open-ai:
+    chat-model:
+      base-url: https://api.deepseek.com
+      api-key: ${langchain4j.deepseek.api-key}
+      model-name: deepseek-v4-flash
+      log-requests: true
+      log-responses: true
+      max-token: 8192
+      strict-json-schema: true
+      response-format: json_object
+    streaming-chat-model:
+      base-url: https://api.deepseek.com
+      api-key: ${langchain4j.deepseek.api-key}
+      model-name: deepseek-v4-flash
+      log-requests: true
+      log-responses: true
+      max-token: 8192
 
 # springdoc-openapi
 springdoc:
