@@ -17,6 +17,8 @@ import java.util.List;
  */
 public interface AppService extends IService<App> {
 
+    String deployApp(Long appId, User loginUser);
+
     Flux<String> chatToGenCode(Long appId, String message, User loginUser);
 
     QueryWrapper getQueryWrapper(AppQueryRequest appQueryRequest);
