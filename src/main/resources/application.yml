@@ -34,6 +34,7 @@ langchain4j:
       log-requests: true
       log-responses: true
       max-token: 8192
+      timeout: 600s
 
 # springdoc-openapi
 springdoc:
