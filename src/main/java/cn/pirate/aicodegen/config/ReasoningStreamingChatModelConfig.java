@@ -23,7 +23,7 @@ public class ReasoningStreamingChatModelConfig {
     public StreamingChatModel reasoningStreamingChatModel() {
         // 为了测试方便临时修改
         final String modelName = "deepseek-v4-flash";
-        final int maxTokens = 8192;
+        final int maxTokens = 102400;
         // 生产环境使用：
         // final String modelName = "deepseek-v4-flash";
         // final int maxTokens = 32768;
