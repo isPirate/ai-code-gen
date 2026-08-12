@@ -4,6 +4,7 @@ import cn.pirate.aicodegen.model.entity.User;
 import cn.pirate.aicodegen.model.enums.ChatHistoryMessageTypeEnum;
 import cn.pirate.aicodegen.service.ChatHistoryService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 /**
@@ -11,6 +12,7 @@ import reactor.core.publisher.Flux;
  * 处理 HTML 和 MULTI_FILE 类型的流式响应
  */
 @Slf4j
+@Component
 public class SimpleTextStreamHandler {
 
     /**

@@ -40,21 +40,21 @@ public class StaticResourceController {
                 headers.add("Location", request.getRequestURI() + "/");
                 return new ResponseEntity<>(headers, HttpStatus.MOVED_PERMANENTLY);
             }
-            // 默认返回 index.html
-            if (resourcePath.equals("/")) {
-                resourcePath = "/index.html";
-            }
             // 构建文件路径
             String filePath = PREVIEW_ROOT_DIR + "/" + deployKey + resourcePath;
             File file = new File(filePath);
+            // 目录访问 → 默认返回 index.html（覆盖根目录与子目录，如 Vue 工程的 dist）
+            if (file.isDirectory()) {
+                file = new File(file, "index.html");
+            }
             // 检查文件是否存在
             if (!file.exists()) {
                 return ResponseEntity.notFound().build();
             }
-            // 返回文件资源
+            // 返回文件资源（Content-Type 基于实际解析后的文件）
             Resource resource = new FileSystemResource(file);
             return ResponseEntity.ok()
-                    .header("Content-Type", getContentTypeWithCharset(filePath))
+                    .header("Content-Type", getContentTypeWithCharset(file.getPath()))
                     .body(resource);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

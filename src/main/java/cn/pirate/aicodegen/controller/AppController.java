@@ -76,7 +76,21 @@ public class AppController {
                                 .event("done")
                                 .data("")
                                 .build()
-                ));
+                ))
+                .onErrorResume(error -> {
+                    // SSE 流一旦开始，HTTP 响应头就是 text/event-stream，无法再走 @ExceptionHandler
+                    // （会引发 HttpMessageNotWritableException 二级错误），所以必须在 Reactor 链路内自接 error：
+                    // 1. 发一条带错误文本的 data 消息（前端 onmessage 拿到具体原因）
+                    // 2. 紧接着发 done 事件，前端正常 close，不触发 EventSource 重连
+                    Map<String, String> errWrapper = Map.of(
+                            "d", "[系统提示] AI 生成失败：" + error.getMessage()
+                    );
+                    String errJson = JSONUtil.toJsonStr(errWrapper);
+                    return Flux.just(
+                            ServerSentEvent.<String>builder().data(errJson).build(),
+                            ServerSentEvent.<String>builder().event("done").data("").build()
+                    );
+                });
     }
 
     /**

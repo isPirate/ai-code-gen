@@ -3,6 +3,7 @@ package cn.pirate.aicodegen.core.handler;
 import cn.pirate.aicodegen.model.entity.User;
 import cn.pirate.aicodegen.model.enums.CodeGenTypeEnum;
 import cn.pirate.aicodegen.service.ChatHistoryService;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -17,8 +18,10 @@ import reactor.core.publisher.Flux;
 @Component
 public class StreamHandlerExecutor {
 
-    private static final JsonMessageStreamHandler jsonMessageStreamHandler = new JsonMessageStreamHandler();
-    private static final SimpleTextStreamHandler simpleTextStreamHandler = new SimpleTextStreamHandler();
+    @Resource
+    private JsonMessageStreamHandler jsonMessageStreamHandler;
+    @Resource
+    private SimpleTextStreamHandler simpleTextStreamHandler;
 
 
     /**
@@ -31,7 +34,7 @@ public class StreamHandlerExecutor {
      * @param codeGenType        代码生成类型
      * @return 处理后的流
      */
-    public static Flux<String> doExecute(Flux<String> originFlux,
+    public Flux<String> doExecute(Flux<String> originFlux,
                                   ChatHistoryService chatHistoryService,
                                   long appId, User loginUser, CodeGenTypeEnum codeGenType) {
         return switch (codeGenType) {
