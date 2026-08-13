@@ -20,7 +20,7 @@ import java.util.Set;
 
 /**
  * JSON 消息流处理器
- * 处理 VUE_PROJECT 类型的复杂流式响应，包含工具调用信息
+ * 处理 VUE_PROJECT 类型的复杂流式响应，包含思考内容与工具调用信息
  */
 @Slf4j
 @Component
@@ -32,7 +32,7 @@ public class JsonMessageStreamHandler {
 
     /**
      * 处理 TokenStream（VUE_PROJECT）
-     * 解析 JSON 消息并重组为完整的响应格式
+     * 解析 JSON 消息并重组为前端可识别的渲染项
      *
      * @param originFlux         原始流
      * @param chatHistoryService 聊天历史服务
@@ -40,19 +40,16 @@ public class JsonMessageStreamHandler {
      * @param loginUser          登录用户
      * @return 处理后的流
      */
-    public Flux<String> handle(Flux<String> originFlux,
-                               ChatHistoryService chatHistoryService,
-                               long appId, User loginUser) {
-        // 收集数据用于生成后端记忆格式
+    public Flux<RenderedStreamItem> handle(Flux<String> originFlux,
+                                           ChatHistoryService chatHistoryService,
+                                           long appId, User loginUser) {
+        // 收集数据用于生成后端记忆格式（思考内容不累积）
         StringBuilder chatHistoryStringBuilder = new StringBuilder();
         // 用于跟踪已经见过的工具ID，判断是否是第一次调用
         Set<String> seenToolIds = new HashSet<>();
         return originFlux
-                .map(chunk -> {
-                    // 解析每个 JSON 消息块
-                    return handleJsonMessageChunk(chunk, chatHistoryStringBuilder, seenToolIds);
-                })
-                .filter(StrUtil::isNotEmpty) // 过滤空字串
+                .map(chunk -> handleJsonMessageChunk(chunk, chatHistoryStringBuilder, seenToolIds))
+                .filter(item -> StrUtil.isNotEmpty(item.getData()))
                 .doOnComplete(() -> {
                     // 流式响应完成后，添加 AI 消息到对话历史
                     String aiResponse = chatHistoryStringBuilder.toString();
@@ -71,29 +68,29 @@ public class JsonMessageStreamHandler {
     /**
      * 解析并收集 TokenStream 数据
      */
-    private String handleJsonMessageChunk(String chunk, StringBuilder chatHistoryStringBuilder, Set<String> seenToolIds) {
-        // 解析 JSON
+    private RenderedStreamItem handleJsonMessageChunk(String chunk, StringBuilder chatHistoryStringBuilder, Set<String> seenToolIds) {
         StreamMessage streamMessage = JSONUtil.toBean(chunk, StreamMessage.class);
         StreamMessageTypeEnum typeEnum = StreamMessageTypeEnum.getEnumByValue(streamMessage.getType());
         switch (typeEnum) {
             case AI_RESPONSE -> {
                 AiResponseMessage aiMessage = JSONUtil.toBean(chunk, AiResponseMessage.class);
                 String data = aiMessage.getData();
-                // 直接拼接响应
                 chatHistoryStringBuilder.append(data);
-                return data;
+                return RenderedStreamItem.of(StreamMessageTypeEnum.AI_RESPONSE, data);
+            }
+            case REASONING -> {
+                ReasoningMessage reasoningMessage = JSONUtil.toBean(chunk, ReasoningMessage.class);
+                // 思考内容透传前端，不入库
+                return RenderedStreamItem.reasoning(reasoningMessage.getData());
             }
             case TOOL_REQUEST -> {
                 ToolRequestMessage toolRequestMessage = JSONUtil.toBean(chunk, ToolRequestMessage.class);
                 String toolId = toolRequestMessage.getId();
-                // 检查是否是第一次看到这个工具 ID
                 if (toolId != null && !seenToolIds.contains(toolId)) {
-                    // 第一次调用这个工具，记录 ID 并完整返回工具信息
                     seenToolIds.add(toolId);
-                    return "\n\n[选择工具] 写入文件\n\n";
+                    return RenderedStreamItem.of(StreamMessageTypeEnum.TOOL_REQUEST, "\n\n[选择工具] 写入文件\n\n");
                 } else {
-                    // 不是第一次调用这个工具，直接返回空
-                    return "";
+                    return RenderedStreamItem.of(StreamMessageTypeEnum.TOOL_REQUEST, "");
                 }
             }
             case TOOL_EXECUTED -> {
@@ -108,14 +105,13 @@ public class JsonMessageStreamHandler {
                         %s
                         ```
                         """, relativeFilePath, suffix, content);
-                // 输出前端和要持久化的内容
                 String output = String.format("\n\n%s\n\n", result);
                 chatHistoryStringBuilder.append(output);
-                return output;
+                return RenderedStreamItem.of(StreamMessageTypeEnum.TOOL_EXECUTED, output);
             }
             default -> {
                 log.error("不支持的消息类型: {}", typeEnum);
-                return "";
+                return RenderedStreamItem.of(StreamMessageTypeEnum.AI_RESPONSE, "");
             }
         }
     }

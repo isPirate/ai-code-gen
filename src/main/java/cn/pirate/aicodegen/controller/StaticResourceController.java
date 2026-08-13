@@ -55,6 +55,8 @@ public class StaticResourceController {
             Resource resource = new FileSystemResource(file);
             return ResponseEntity.ok()
                     .header("Content-Type", getContentTypeWithCharset(file.getPath()))
+                    .lastModified(file.lastModified())
+                    .eTag(String.format("\"%x-%x\"", file.length(), file.lastModified()))
                     .body(resource);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

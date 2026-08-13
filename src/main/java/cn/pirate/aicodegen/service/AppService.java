@@ -1,5 +1,6 @@
 package cn.pirate.aicodegen.service;
 
+import cn.pirate.aicodegen.ai.model.message.RenderedStreamItem;
 import cn.pirate.aicodegen.model.dto.app.AppQueryRequest;
 import cn.pirate.aicodegen.model.entity.User;
 import cn.pirate.aicodegen.model.vo.AppVO;
@@ -19,7 +20,7 @@ public interface AppService extends IService<App> {
 
     String deployApp(Long appId, User loginUser);
 
-    Flux<String> chatToGenCode(Long appId, String message, User loginUser);
+    Flux<RenderedStreamItem> chatToGenCode(Long appId, String message, User loginUser);
 
     QueryWrapper getQueryWrapper(AppQueryRequest appQueryRequest);
 

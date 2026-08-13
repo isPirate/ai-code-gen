@@ -3,12 +3,14 @@ package cn.pirate.aicodegen.controller;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import cn.pirate.aicodegen.ai.model.message.StreamMessageTypeEnum;
 import cn.pirate.aicodegen.annotation.AuthCheck;
 import cn.pirate.aicodegen.common.BaseResponse;
 import cn.pirate.aicodegen.common.DeleteRequest;
 import cn.pirate.aicodegen.common.ResultUtils;
 import cn.pirate.aicodegen.constant.AppConstant;
 import cn.pirate.aicodegen.constant.UserConstant;
+import cn.pirate.aicodegen.ai.model.message.RenderedStreamItem;
 import cn.pirate.aicodegen.exception.BusinessException;
 import cn.pirate.aicodegen.exception.ErrorCode;
 import cn.pirate.aicodegen.exception.ThrowUtils;
@@ -24,7 +26,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import cn.pirate.aicodegen.model.entity.App;
 import cn.pirate.aicodegen.service.AppService;
 import reactor.core.publisher.Flux;
@@ -59,16 +60,19 @@ public class AppController {
         // 获取当前登录用户
         User loginUser = userService.getLoginUser(request);
         // 调用服务生成代码（流式）
-        Flux<String> contentFlux = appService.chatToGenCode(appId, message, loginUser);
-        // 转换为 ServerSentEvent 格式
+        Flux<RenderedStreamItem> contentFlux = appService.chatToGenCode(appId, message, loginUser);
+        // 转换为 ServerSentEvent 格式：
+        //  - REASONING       → SSE event: thinking（前端用独立监听器渲染思考面板）
+        //  - 其它（AI 响应 / 工具调用 / 错误提示） → 默认 message 事件
         return contentFlux
-                .map(chunk -> {
-                    // 将内容包装成JSON对象
-                    Map<String, String> wrapper = Map.of("d", chunk);
+                .map(item -> {
+                    Map<String, String> wrapper = Map.of("d", item.getData());
                     String jsonData = JSONUtil.toJsonStr(wrapper);
-                    return ServerSentEvent.<String>builder()
-                            .data(jsonData)
-                            .build();
+                    ServerSentEvent.Builder<String> builder = ServerSentEvent.<String>builder().data(jsonData);
+                    if (item.getType() == StreamMessageTypeEnum.REASONING) {
+                        builder.event("thinking");
+                    }
+                    return builder.build();
                 })
                 .concatWith(Mono.just(
                         // 发送结束事件
@@ -136,7 +140,7 @@ public class AppController {
         // 应用名称暂时为 initPrompt 前 12 位
         app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
         // 暂时设置为多文件生成
-        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
+        app.setCodeGenType(CodeGenTypeEnum.HTML.getValue());
         // 插入数据库
         boolean result = appService.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);

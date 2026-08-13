@@ -50,7 +50,9 @@ langchain4j:
       log-requests: true
       log-responses: true
       max-token: 8192
-      timeout: 600s
+#      timeout: 600s
+      # 解析 reasoning_content，触发 TokenStream.onPartialThinking 回调
+      return-thinking: true
 
 # springdoc-openapi
 springdoc:

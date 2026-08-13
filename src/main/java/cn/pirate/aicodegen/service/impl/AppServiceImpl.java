@@ -8,6 +8,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.pirate.aicodegen.constant.AppConstant;
 import cn.pirate.aicodegen.core.AiCodeGeneratorFacade;
 import cn.pirate.aicodegen.core.builder.VueProjectBuilder;
+import cn.pirate.aicodegen.ai.model.message.RenderedStreamItem;
 import cn.pirate.aicodegen.core.handler.StreamHandlerExecutor;
 import cn.pirate.aicodegen.exception.BusinessException;
 import cn.pirate.aicodegen.exception.ErrorCode;
@@ -119,7 +120,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
 
     @Override
-    public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
+    public Flux<RenderedStreamItem> chatToGenCode(Long appId, String message, User loginUser) {
         // 1. 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
         ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");

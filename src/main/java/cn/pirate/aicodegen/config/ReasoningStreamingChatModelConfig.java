@@ -34,8 +34,10 @@ public class ReasoningStreamingChatModelConfig {
                 .baseUrl(baseUrl)
                 .modelName(modelName)
                 .maxTokens(maxTokens)
+                // 解析 reasoning_content，触发 TokenStream.onPartialThinking 回调
+                .returnThinking(true)
                 // 推理模型 + 长输出场景，默认 readTimeout=60s 不够（思考间隙可能 60s+ 无新 SSE event）
-                .timeout(Duration.ofMinutes(10))
+//                .timeout(Duration.ofMinutes(10))
                 .logRequests(true)
                 .logResponses(true)
                 .build();
