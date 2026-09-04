@@ -18,6 +18,8 @@ import java.util.List;
  */
 public interface AppService extends IService<App> {
 
+    void generateAppScreenshotAsync(Long appId, String appUrl);
+
     String deployApp(Long appId, User loginUser);
 
     Flux<RenderedStreamItem> chatToGenCode(Long appId, String message, User loginUser);
