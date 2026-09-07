@@ -5,6 +5,8 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.pirate.aicodegen.ai.model.message.*;
+import cn.pirate.aicodegen.ai.tools.BaseTool;
+import cn.pirate.aicodegen.ai.tools.ToolManager;
 import cn.pirate.aicodegen.constant.AppConstant;
 import cn.pirate.aicodegen.core.builder.VueProjectBuilder;
 import cn.pirate.aicodegen.model.entity.User;
@@ -28,6 +30,9 @@ public class JsonMessageStreamHandler {
 
     @Resource
     private VueProjectBuilder vueProjectBuilder;
+
+    @Resource
+    private ToolManager toolManager;
 
 
     /**
@@ -86,25 +91,21 @@ public class JsonMessageStreamHandler {
             case TOOL_REQUEST -> {
                 ToolRequestMessage toolRequestMessage = JSONUtil.toBean(chunk, ToolRequestMessage.class);
                 String toolId = toolRequestMessage.getId();
+                String toolName = toolRequestMessage.getName();
                 if (toolId != null && !seenToolIds.contains(toolId)) {
                     seenToolIds.add(toolId);
-                    return RenderedStreamItem.of(StreamMessageTypeEnum.TOOL_REQUEST, "\n\n[选择工具] 写入文件\n\n");
+                    BaseTool tool = toolManager.getTool(toolName);
+                    return RenderedStreamItem.of(StreamMessageTypeEnum.TOOL_REQUEST, tool.generateToolRequestResponse());
                 } else {
                     return RenderedStreamItem.of(StreamMessageTypeEnum.TOOL_REQUEST, "");
                 }
             }
             case TOOL_EXECUTED -> {
                 ToolExecutedMessage toolExecutedMessage = JSONUtil.toBean(chunk, ToolExecutedMessage.class);
+                String toolName = toolExecutedMessage.getName();
                 JSONObject jsonObject = JSONUtil.parseObj(toolExecutedMessage.getArguments());
-                String relativeFilePath = jsonObject.getStr("relativeFilePath");
-                String suffix = FileUtil.getSuffix(relativeFilePath);
-                String content = jsonObject.getStr("content");
-                String result = String.format("""
-                        [工具调用] 写入文件 %s
-                        ```%s
-                        %s
-                        ```
-                        """, relativeFilePath, suffix, content);
+                BaseTool tool = toolManager.getTool(toolName);
+                String result = tool.generateToolExecutedResult(jsonObject);
                 String output = String.format("\n\n%s\n\n", result);
                 chatHistoryStringBuilder.append(output);
                 return RenderedStreamItem.of(StreamMessageTypeEnum.TOOL_EXECUTED, output);

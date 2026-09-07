@@ -1,6 +1,6 @@
 package cn.pirate.aicodegen.ai;
 
-import cn.pirate.aicodegen.ai.tools.FileWriteTool;
+import cn.pirate.aicodegen.ai.tools.*;
 import cn.pirate.aicodegen.exception.BusinessException;
 import cn.pirate.aicodegen.exception.ErrorCode;
 import cn.pirate.aicodegen.model.enums.CodeGenTypeEnum;
@@ -40,6 +40,9 @@ public class AiCodeGeneratorServiceFactory {
 
     @Resource
     private ChatHistoryService chatHistoryService;
+
+    @Resource
+    private ToolManager toolManager;
 
 
     /**
@@ -101,7 +104,7 @@ public class AiCodeGeneratorServiceFactory {
             case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(new FileWriteTool())
+                    .tools(toolManager.getAllTools())
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                             toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                     ))
