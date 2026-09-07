@@ -1,6 +1,7 @@
 package cn.pirate.aicodegen.service;
 
 import cn.pirate.aicodegen.ai.model.message.RenderedStreamItem;
+import cn.pirate.aicodegen.model.dto.app.AppAddRequest;
 import cn.pirate.aicodegen.model.dto.app.AppQueryRequest;
 import cn.pirate.aicodegen.model.entity.User;
 import cn.pirate.aicodegen.model.vo.AppVO;
@@ -17,6 +18,8 @@ import java.util.List;
  * @author <a href="https://github.com/isPirate">isPirate</a>
  */
 public interface AppService extends IService<App> {
+
+    Long createApp(AppAddRequest appAddRequest, User loginUser);
 
     void generateAppScreenshotAsync(Long appId, String appUrl);
 
