@@ -55,6 +55,18 @@
             <artifactId>langchain4j-community-redis-spring-boot-starter</artifactId>
             <version>1.1.0-beta7</version>
         </dependency>
+        <!-- LangGraph4j -->
+        <dependency>
+            <groupId>org.bsc.langgraph4j</groupId>
+            <artifactId>langgraph4j-core</artifactId>
+            <version>1.6.0-rc2</version>
+        </dependency>
+        <!-- 阿里云 DashScope SDK -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>dashscope-sdk-java</artifactId>
+            <version>2.21.1</version>
+        </dependency>
         <!-- Spring Session + Redis -->
         <dependency>
             <groupId>org.springframework.session</groupId>
@@ -163,7 +175,7 @@
                         </goals>
                         <configuration>
                             <annotationProcessorPaths>
-                                <path>
+                            <path>
                                     <groupId>org.projectlombok</groupId>
                                     <artifactId>lombok</artifactId>
                                     <version>1.18.36</version>
