@@ -3,6 +3,7 @@ package cn.pirate.aicodegen.controller;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import cn.pirate.aicodegen.ai.model.message.RenderedStreamItem;
 import cn.pirate.aicodegen.ai.model.message.StreamMessageTypeEnum;
 import cn.pirate.aicodegen.annotation.AuthCheck;
 import cn.pirate.aicodegen.common.BaseResponse;
@@ -10,14 +11,14 @@ import cn.pirate.aicodegen.common.DeleteRequest;
 import cn.pirate.aicodegen.common.ResultUtils;
 import cn.pirate.aicodegen.constant.AppConstant;
 import cn.pirate.aicodegen.constant.UserConstant;
-import cn.pirate.aicodegen.ai.model.message.RenderedStreamItem;
 import cn.pirate.aicodegen.exception.BusinessException;
 import cn.pirate.aicodegen.exception.ErrorCode;
 import cn.pirate.aicodegen.exception.ThrowUtils;
 import cn.pirate.aicodegen.model.dto.app.*;
+import cn.pirate.aicodegen.model.entity.App;
 import cn.pirate.aicodegen.model.entity.User;
-import cn.pirate.aicodegen.model.enums.CodeGenTypeEnum;
 import cn.pirate.aicodegen.model.vo.AppVO;
+import cn.pirate.aicodegen.service.AppService;
 import cn.pirate.aicodegen.service.ProjectDownloadService;
 import cn.pirate.aicodegen.service.UserService;
 import com.mybatisflex.core.paginate.Page;
@@ -25,11 +26,10 @@ import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
-import cn.pirate.aicodegen.model.entity.App;
-import cn.pirate.aicodegen.service.AppService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -286,6 +286,11 @@ public class AppController {
      * @return 精选应用列表
      */
     @PostMapping("/good/list/page/vo")
+    @Cacheable(
+            value = "good_app_page",
+            key = "T(cn.pirate.aicodegen.util.CacheKeyUtils).generateKey(#appQueryRequest)",
+            condition = "#appQueryRequest.pageNum <= 10"
+    )
     public BaseResponse<Page<AppVO>> listGoodAppVOByPage(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
         // 限制每页最多 20 个
