@@ -9,9 +9,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 
 @Configuration
-@ConfigurationProperties(prefix = "langchain4j.open-ai.reasoning-streaming-chat-model")
+@ConfigurationProperties(prefix = "langchain4j.open-ai.streaming-chat-model")
 @Data
-public class ReasoningStreamingChatModelConfig {
+public class StreamingChatModelConfig {
 
     private String baseUrl;
 
@@ -23,36 +23,24 @@ public class ReasoningStreamingChatModelConfig {
 
     private Double temperature;
 
-    private Boolean logRequests = false;
+    private boolean logRequests;
 
-    private Boolean logResponses = false;
+    private boolean logResponses;
 
     private Boolean returnThinking = false;
 
-    /**
-     * 推理流式模型（用于 Vue 项目生成，带工具调用）
-     */
     @Bean
     @Scope("prototype")
-    public StreamingChatModel reasoningStreamingChatModel() {
-        // 为了测试方便临时修改
-        // final String modelName = "deepseek-v4-flash";
-        // final int maxTokens = 102400;
-        // 生产环境使用：
-        // final String modelName = "deepseek-v4-flash";
-        // final int maxTokens = 32768;
+    public StreamingChatModel streamingChatModelPrototype() {
         return OpenAiStreamingChatModel.builder()
                 .apiKey(apiKey)
                 .baseUrl(baseUrl)
                 .modelName(modelName)
                 .maxTokens(maxTokens)
                 .temperature(temperature)
-                // 解析 reasoning_content，触发 TokenStream.onPartialThinking 回调
+                .logRequests(logRequests)
+                .logResponses(logResponses)
                 .returnThinking(returnThinking)
-                // 推理模型 + 长输出场景，默认 readTimeout=60s 不够（思考间隙可能 60s+ 无新 SSE event）
-//                .timeout(Duration.ofMinutes(10))
-                .logRequests(true)
-                .logResponses(true)
                 .build();
     }
 }

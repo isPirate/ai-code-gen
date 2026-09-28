@@ -53,6 +53,24 @@ langchain4j:
 #      timeout: 600s
       # 解析 reasoning_content，触发 TokenStream.onPartialThinking 回调
       return-thinking: true
+    # 推理 AI 模型配置（用于复杂的推理任务）
+    reasoning-streaming-chat-model:
+      base-url: https://api.deepseek.com
+      api-key: ${langchain4j.deepseek.api-key}
+      model-name: deepseek-v4-flash
+      max-tokens: 32768
+      temperature: 0.1
+      log-requests: true
+      log-responses: true
+      # 解析 reasoning_content，触发 TokenStream.onPartialThinking 回调
+      return-thinking: true
+    # 智能路由 AI 模型配置（用于简单的分类任务）
+    routing-chat-model:
+      base-url: https://api.deepseek.com
+      api-key: ${langchain4j.deepseek.api-key}
+      model-name: deepseek-v4-flash
+      log-requests: true
+      log-responses: true
 
 # springdoc-openapi
 springdoc:
