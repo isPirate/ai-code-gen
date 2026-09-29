@@ -18,6 +18,8 @@ import cn.pirate.aicodegen.model.dto.app.*;
 import cn.pirate.aicodegen.model.entity.App;
 import cn.pirate.aicodegen.model.entity.User;
 import cn.pirate.aicodegen.model.vo.AppVO;
+import cn.pirate.aicodegen.ratelimiter.annotation.RateLimit;
+import cn.pirate.aicodegen.ratelimiter.enums.RateLimitType;
 import cn.pirate.aicodegen.service.AppService;
 import cn.pirate.aicodegen.service.ProjectDownloadService;
 import cn.pirate.aicodegen.service.UserService;
@@ -26,6 +28,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
@@ -43,6 +46,7 @@ import java.util.Map;
  *
  * @author <a href="https://github.com/isPirate">isPirate</a>
  */
+@Slf4j
 @RestController
 @RequestMapping("/app")
 public class AppController {
@@ -93,6 +97,7 @@ public class AppController {
 
 
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RateLimit(limitType = RateLimitType.USER, rate = 5, rateInterval = 60, message = "AI 对话请求过于频繁，请稍后再试")
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
                                                        @RequestParam String message,
                                                        HttpServletRequest request) {
@@ -125,15 +130,26 @@ public class AppController {
                 ))
                 .onErrorResume(error -> {
                     // SSE 流一旦开始，HTTP 响应头就是 text/event-stream，无法再走 @ExceptionHandler
-                    // （会引发 HttpMessageNotWritableException 二级错误），所以必须在 Reactor 链路内自接 error：
-                    // 1. 发一条带错误文本的 data 消息（前端 onmessage 拿到具体原因）
-                    // 2. 紧接着发 done 事件，前端正常 close，不触发 EventSource 重连
-                    Map<String, String> errWrapper = Map.of(
-                            "d", "[系统提示] AI 生成失败：" + error.getMessage()
-                    );
-                    String errJson = JSONUtil.toJsonStr(errWrapper);
+                    // （会引发 HttpMessageNotWritableException 二级错误），所以必须在 Reactor 链路内自接 error。
+                    // 与 GlobalExceptionHandler 的 SSE 分支保持同一格式（business-error + done），前端同一套展示：
+                    // 业务异常透出 message；技术异常给兜底文案，原始异常只进日志
+                    boolean business = error instanceof BusinessException;
+                    if (business) {
+                        log.warn("AI 生成流业务失败，appId={}，code={}，msg={}", appId,
+                                ((BusinessException) error).getCode(), error.getMessage());
+                    } else {
+                        log.error("AI 生成流失败，appId={}", appId, error);
+                    }
+                    Map<String, Object> errData = business
+                            ? Map.of("error", true,
+                                    "code", ((BusinessException) error).getCode(),
+                                    "message", error.getMessage())
+                            : Map.of("error", true,
+                                    "code", ErrorCode.SYSTEM_ERROR.getCode(),
+                                    "message", "AI 服务暂时不可用，请稍后再试");
+                    String errJson = JSONUtil.toJsonStr(errData);
                     return Flux.just(
-                            ServerSentEvent.<String>builder().data(errJson).build(),
+                            ServerSentEvent.<String>builder().event("business-error").data(errJson).build(),
                             ServerSentEvent.<String>builder().event("done").data("").build()
                     );
                 });

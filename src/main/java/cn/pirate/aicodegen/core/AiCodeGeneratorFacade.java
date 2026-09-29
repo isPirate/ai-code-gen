@@ -114,19 +114,20 @@ public class AiCodeGeneratorFacade {
                         sink.next(JSONUtil.toJsonStr(reasoningMessage));
                     })
                     .onCompleteResponse((ChatResponse response) -> {
-                        // 流结束后解析并保存代码
+                        // 流结束后解析并保存代码；失败必须作为 error 信号下发，否则前端以为生成成功
                         try {
                             String completeCode = codeBuilder.toString();
                             Object parsedResult = CodeParserExecutor.executeParser(completeCode, codeGenType);
                             File savedDir = CodeFileSaverExecutor.executeSaver(parsedResult, codeGenType, appId);
                             log.info("保存成功，路径为：{}", savedDir.getAbsolutePath());
+                            sink.complete();
                         } catch (Exception e) {
-                            log.error("保存失败: {}", e.getMessage());
+                            log.error("代码解析/保存失败，appId={}", appId, e);
+                            sink.error(e);
                         }
-                        sink.complete();
                     })
                     .onError((Throwable error) -> {
-                        error.printStackTrace();
+                        log.error("TokenStream 流式调用失败，appId={}", appId, error);
                         sink.error(error);
                     })
                     .start();
@@ -160,7 +161,7 @@ public class AiCodeGeneratorFacade {
                         sink.complete();
                     })
                     .onError((Throwable error) -> {
-                        error.printStackTrace();
+                        log.error("VUE_PROJECT TokenStream 流式调用失败", error);
                         sink.error(error);
                     })
                     .start();
