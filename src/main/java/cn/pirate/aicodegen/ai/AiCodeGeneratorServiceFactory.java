@@ -1,5 +1,6 @@
 package cn.pirate.aicodegen.ai;
 
+import cn.pirate.aicodegen.ai.guradrail.PromptSafetyInputGuardrail;
 import cn.pirate.aicodegen.ai.tools.ToolManager;
 import cn.pirate.aicodegen.exception.BusinessException;
 import cn.pirate.aicodegen.exception.ErrorCode;
@@ -103,6 +104,7 @@ public class AiCodeGeneratorServiceFactory {
                         .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                                 toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                         ))
+                        .inputGuardrails(new PromptSafetyInputGuardrail())
                         .build();
             }
             // HTML / 多文件生成使用 yml 自动配置的 openAiStreamingChatModel（同样在 yml 开启了 return-thinking）
@@ -112,6 +114,7 @@ public class AiCodeGeneratorServiceFactory {
                         .chatModel(chatModel)
                         .streamingChatModel(openAiStreamingChatModel)
                         .chatMemoryProvider(memoryId -> chatMemory)
+                        .inputGuardrails(new PromptSafetyInputGuardrail())
                         .build();
             }
             default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
